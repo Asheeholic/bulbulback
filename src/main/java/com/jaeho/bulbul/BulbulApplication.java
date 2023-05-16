@@ -9,5 +9,4 @@ public class BulbulApplication {
     public static void main(String[] args) {
         SpringApplication.run(BulbulApplication.class, args);
     }
-
 }

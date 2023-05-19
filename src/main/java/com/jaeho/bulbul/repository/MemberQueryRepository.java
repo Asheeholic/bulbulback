@@ -6,11 +6,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MemberQueryRepository {
 
-    private final JPAQueryFactory queryFactory;
+    private final JPAQueryFactory query;
 
     public MemberQueryRepository(JPAQueryFactory queryFactory){
-        this.queryFactory = queryFactory;
+        this.query = queryFactory;
     }
+
 
 
 }

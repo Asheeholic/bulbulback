@@ -2,10 +2,7 @@ package com.jaeho.bulbul.entity;
 
 import com.jaeho.bulbul.entity.baseEntiry.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,5 +24,11 @@ public class BackupInfo extends BaseEntity {
     @OneToMany(mappedBy = "backupInfo")
     private List<FileInfo> fileInfos = new ArrayList<>();
 
+    @Builder
+    public BackupInfo(Long key, Member member, List<FileInfo> fileInfos) {
+        this.key = key;
+        this.member = member;
+        this.fileInfos = fileInfos;
+    }
 
 }

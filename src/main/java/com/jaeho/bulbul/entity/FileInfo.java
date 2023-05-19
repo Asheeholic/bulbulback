@@ -1,6 +1,6 @@
 package com.jaeho.bulbul.entity;
 
-import com.jaeho.bulbul.entity.baseEntiry.BaseEntity;
+import com.jaeho.bulbul.entity.baseEntity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

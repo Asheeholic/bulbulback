@@ -1,4 +1,4 @@
-package com.jaeho.bulbul.entity.baseEntiry;
+package com.jaeho.bulbul.entity.baseEntity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.MappedSuperclass;

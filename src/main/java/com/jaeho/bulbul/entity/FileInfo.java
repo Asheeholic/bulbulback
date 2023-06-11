@@ -20,12 +20,15 @@ public class FileInfo extends BaseEntity {
 
     private String filename;
 
-    private String encryptFilename;
+    private String fileType;
+
+    private Long fileSize;
 
     @Builder
-    public FileInfo(BackupInfo backupInfo, String filename, String encryptFilename) {
+    public FileInfo(BackupInfo backupInfo, String filename, String fileType, Long fileSize) {
         this.backupInfo = backupInfo;
         this.filename = filename;
-        this.encryptFilename = encryptFilename;
+        this.fileType = fileType;
+        this.fileSize = fileSize;
     }
 }

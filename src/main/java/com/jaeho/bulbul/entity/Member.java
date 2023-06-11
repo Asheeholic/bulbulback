@@ -40,6 +40,7 @@ public class Member extends BaseEntity implements UserDetails {
     private Timestamp loginDate;
 
     @OneToMany(mappedBy = "member")
+    @Builder.Default
     private List<BackupInfo> backupInfos = new ArrayList<>();
 
 //    @Enumerated(EnumType.STRING)
@@ -50,6 +51,7 @@ public class Member extends BaseEntity implements UserDetails {
             name = "member_roles",
             joinColumns = @JoinColumn(name = "member_key")
     )
+    @Builder.Default
     private List<String> roles = new ArrayList<>();
 
     // 아래부턴 바꾸기

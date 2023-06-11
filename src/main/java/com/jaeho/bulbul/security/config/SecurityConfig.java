@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .requestMatchers("/members/login").permitAll()
                 .requestMatchers("/members/signup").permitAll()
                 .requestMatchers("/members/test").hasRole("USER")
+                .requestMatchers("/backup-files").hasRole("USER")
                 .anyRequest().authenticated()
                 .and()
                 .addFilterBefore(

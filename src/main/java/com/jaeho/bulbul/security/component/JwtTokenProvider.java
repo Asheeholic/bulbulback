@@ -53,6 +53,8 @@ public class JwtTokenProvider {
                 .compact();
 
         // Refresh Token 생성
+        // Refresh를 위한 구성은 생략
+        // 시간이 된다면 후에 작업!!
         String refreshToken = Jwts.builder()
                 .setExpiration(new Date(now + 86400000))
                 .signWith(key, SignatureAlgorithm.HS256)

@@ -1,8 +1,15 @@
 package com.jaeho.bulbul.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jaeho.bulbul.dto.UploadFileResponse;
 import com.jaeho.bulbul.entity.BackupInfo;
 import com.jaeho.bulbul.entity.FileInfo;
+import com.jaeho.bulbul.netbackup.admin.ManualBackupAPI;
+import com.jaeho.bulbul.netbackup.config.CheckPolicyExistAPI;
+import com.jaeho.bulbul.netbackup.config.CreatePolicyAPI;
+import com.jaeho.bulbul.netbackup.config.UpdateBackupSelectionAPI;
+import com.jaeho.bulbul.netbackup.gateway.BackupLoginAPI;
+import com.jaeho.bulbul.netbackup.gateway.BackupLogoutAPI;
 import com.jaeho.bulbul.property.FileStorageProperties;
 import com.jaeho.bulbul.repository.BackupInfoRepository;
 import com.jaeho.bulbul.repository.FileInfoRepository;
@@ -13,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,13 +40,28 @@ public class FileService {
     private final BackupInfoRepository backupInfoRepository;
     private final FileInfoRepository fileInfoRepository;
 
+    // NetBackup
+    private final BackupLoginAPI backupLoginAPI;
+    private final BackupLogoutAPI backupLogoutAPI;
+    private final CheckPolicyExistAPI checkPolicyExistAPI;
+    private final CreatePolicyAPI createPolicyAPI;
+    private final UpdateBackupSelectionAPI updateBackupSelectionAPI;
+    private final ManualBackupAPI manualBackupAPI;
+
+
     // Constructor
     // private 메소드 확인 (makeDir)
     @Autowired
     public FileService(FileStorageProperties fileStorageProperties,
                        MemberRepository memberRepository,
                        BackupInfoRepository backupInfoRepository,
-                       FileInfoRepository fileInfoRepository) {
+                       FileInfoRepository fileInfoRepository,
+                       BackupLoginAPI backupLoginAPI,
+                       BackupLogoutAPI backupLogoutAPI,
+                       CheckPolicyExistAPI checkPolicyExistAPI,
+                       CreatePolicyAPI createPolicyAPI,
+                       UpdateBackupSelectionAPI updateBackupSelectionAPI,
+                       ManualBackupAPI manualBackupAPI) {
         this.dirLocation = Paths.get(fileStorageProperties.getLocation())
                 .toAbsolutePath()
                 .normalize();
@@ -47,6 +70,15 @@ public class FileService {
         this.memberRepository = memberRepository;
         this.backupInfoRepository = backupInfoRepository;
         this.fileInfoRepository = fileInfoRepository;
+
+        // NetBackup
+        this.backupLoginAPI = backupLoginAPI;
+        this.backupLogoutAPI = backupLogoutAPI;
+        this.checkPolicyExistAPI = checkPolicyExistAPI;
+        this.createPolicyAPI = createPolicyAPI;
+        this.updateBackupSelectionAPI = updateBackupSelectionAPI;
+        this.manualBackupAPI = manualBackupAPI;
+
     }
 
     /**
@@ -57,7 +89,7 @@ public class FileService {
      * @param username is String
      * @return List<UploadFileResponse>
      */
-    public List<UploadFileResponse> storeFile(MultipartFile[] files, String username) {
+    public List<UploadFileResponse> storeFile(MultipartFile[] files, String username) throws SSLException, JsonProcessingException {
         // 업로드 되는 폴더에 username 폴더를 만든다.
         Path targetLocation = this.dirLocation.resolve(username);
         makeDir(targetLocation);
@@ -75,8 +107,11 @@ public class FileService {
                 Arrays.stream(files)
                 .map(file -> fileSave(file, uuidPath)).toList();
 
-        // NetBackup API 전달
+        // NetBackup API 전달 (로컬메소드)
+        int jobId = netBackupAPI(username, uuidPath.toString());
 
+        log.info("response is {}", responses);
+        log.info("jobId is {}", jobId);
 
         return responses;
     }
@@ -186,7 +221,7 @@ public class FileService {
      * FileInfo 엔티티 생성 메소드 (private)
      * @param file MultipartFile
      * @param backupInfo BackupInfo
-     * @return
+     * @return FileInfo
      */
     private FileInfo makefileInfo(MultipartFile file, BackupInfo backupInfo) {
         return FileInfo.builder()
@@ -195,5 +230,43 @@ public class FileService {
                 .fileType(file.getContentType())
                 .fileSize(file.getSize())
                 .build();
+    }
+
+
+    /**
+     * NetBackup API 를 사용하기 위한 메소드
+     * @param username is String
+     * @param backupFileLocation is String
+     * @throws SSLException is Exception
+     */
+    private int netBackupAPI(String username, String backupFileLocation) throws SSLException, JsonProcessingException {
+        // 로그인
+        String token = backupLoginAPI.login();
+
+        // 정책이 존재하는지 확인
+        if (checkPolicyExistAPI.checkPolicyExist(token, username) == null) {
+            // 정책이 없으면 생성 및 업데이트
+            log.info("정책 생성");
+            createPolicyAPI.createPolicy(token, username);
+            log.info("정책 생성 끝");
+
+            log.info("if 정책 업데이트");
+            updateBackupSelectionAPI.updateBackupSelection(token, username, backupFileLocation);
+            log.info("if 정책 업데이트 끝");
+        } else {
+            // 정책이 있으면 업데이트
+            log.info("else 정책 업데이트");
+            updateBackupSelectionAPI.updateBackupSelection(token, username, backupFileLocation);
+        }
+
+        // 백업 실행
+        // 위치 뒤바뀜.. 확인 필요
+        int jobId = manualBackupAPI.manualBackup(username, token);
+
+        // 로그아웃
+        backupLogoutAPI.logout(token);
+
+        return jobId;
+
     }
 }

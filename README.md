@@ -3,8 +3,7 @@
 ```mermaid
 flowchart LR
     A[User] --> 
-    |Only could 
-    Access with login| B(bulbul Front)
+    |Only could Access with login| B(bulbul Front)
     B --> |API Call| C{bulbul Back}
     
     C --> |DB api Call| D[(MySQL Server)]
